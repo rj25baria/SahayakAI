@@ -19,11 +19,13 @@ export function QrCardDisplay({
 }) {
   const [dataUrl, setDataUrl] = useState<string>('');
 
+  const effectiveUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/qr/share_demo_sahayak_001` : 'https://sahayak.app/qr/share_demo_sahayak_001');
+
   useEffect(() => {
-    QRCode.toDataURL(url, { width: 320, margin: 1, color: { dark: '#0f1419', light: '#ffffff' } })
+    QRCode.toDataURL(effectiveUrl, { width: 320, margin: 1, color: { dark: '#0284c7', light: '#ffffff' } })
       .then(setDataUrl)
-      .catch(() => setDataUrl(''));
-  }, [url]);
+      .catch((err) => console.error('QR rendering error:', err));
+  }, [effectiveUrl]);
 
   const download = () => {
     if (!dataUrl) return;

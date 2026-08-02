@@ -161,7 +161,29 @@ export interface Guardian {
   patient_profile?: Profile;
 }
 
-export type EmergencyStatus = 'active' | 'accepted' | 'resolved' | 'cancelled';
+export type EmergencyStatus =
+  | 'active'
+  | 'family_alerted'
+  | 'volunteer_escalated'
+  | 'accepted'
+  | 'on_the_way'
+  | 'reached'
+  | 'verification_pending'
+  | 'resolved'
+  | 'cancelled';
+
+export type VolunteerOutcome = 'SAFE' | 'NEEDS_ASSISTANCE' | 'EMERGENCY';
+
+export interface CheckinPrompt {
+  id: string;
+  patient_user_id: string;
+  title: string;
+  status: 'pending' | 'completed' | 'timeout';
+  scheduled_at: string;
+  responded_at: string | null;
+  timeout_seconds: number;
+  created_at: string;
+}
 
 export interface EmergencyRequest {
   id: string;
@@ -173,8 +195,31 @@ export interface EmergencyRequest {
   lat: number | null;
   lng: number | null;
   address: string;
+
+  // No-Response & Escalation details
+  last_response_at?: string | null;
+  no_response_reason?: string | null;
+  family_acknowledged?: boolean;
+  family_acknowledged_at?: string | null;
+  family_acknowledged_by?: string | null;
+  escalated_to_volunteers?: boolean;
+  escalated_at?: string | null;
+
+  // Volunteer & QR Verification details
+  assigned_volunteer_id?: string | null;
   accepted_by: string | null;
   accepted_at: string | null;
+  volunteer_accepted_at?: string | null;
+  volunteer_reached_at?: string | null;
+  qr_verified?: boolean;
+  qr_verified_at?: string | null;
+  qr_verification_token?: string;
+  qr_gps_lat?: number | null;
+  qr_gps_lng?: number | null;
+  qr_gps_distance_meters?: number | null;
+  volunteer_outcome?: VolunteerOutcome | null;
+  outcome_notes?: string | null;
+
   resolved_at: string | null;
   notes: string;
   created_at: string;

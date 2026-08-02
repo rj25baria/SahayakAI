@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n-context';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import {
   LayoutDashboard,
   Activity,
@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { subscribeToAlertNotifications } from '@/lib/notifications';
+import { MedicationReminderListener } from '@/components/notifications/medication-reminder-listener';
 import { toast } from 'sonner';
 import type { Role, Language, Theme } from '@/lib/types';
 
@@ -49,19 +50,19 @@ const ROLE_THEME: Record<Role, { accent: string; ring: string; tag: string; tagB
   patient: {
     accent: 'from-primary to-chart-2',
     ring: 'ring-primary/30',
-    tag: 'Patient Portal',
+    tag: 'Elder Patient Portal',
     tagBg: 'bg-primary/10 text-primary',
   },
   guardian: {
     accent: 'from-sky-500 to-cyan-500',
     ring: 'ring-sky-400/30',
-    tag: 'Guardian Hub',
+    tag: 'Guardian & Volunteer Hub',
     tagBg: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
   },
   doctor: {
     accent: 'from-emerald-500 to-teal-500',
     ring: 'ring-emerald-400/30',
-    tag: 'Clinical Workbench',
+    tag: 'Doctor Panel (Clinical)',
     tagBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   },
   admin: {
@@ -249,6 +250,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <MedicationReminderListener />
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border/60 bg-sidebar lg:block">
         <SidebarContent />
@@ -257,6 +259,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 border-r border-border/60 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>Mobile navigation sidebar links</SheetDescription>
+          </SheetHeader>
           <SidebarContent />
         </SheetContent>
       </Sheet>

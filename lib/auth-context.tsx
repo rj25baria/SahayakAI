@@ -45,6 +45,7 @@ export interface AuthContextValue {
   signInPatient: () => Promise<{ error: string | null }>;
   signInGuardian: () => Promise<{ error: string | null }>;
   signInDoctor: () => Promise<{ error: string | null }>;
+  switchUserById: (targetUserIdOrRole: string) => Promise<{ error: string | null; profile?: Profile }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -85,7 +86,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const init = async () => {
-      const s = getSession();
+      let s = getSession();
+      if (!s) {
+        const db = loadDB();
+        const demoPatient = db.profiles.find((p) => p.role === 'patient') || db.profiles[0];
+        if (demoPatient) {
+          s = { user: { id: demoPatient.id, email: 'demo@sahayak.app' } };
+          setSession(s);
+        }
+      }
       if (!mounted) return;
       setSessionState(s);
       setUser(s ? { id: s.user.id, email: s.user.email } : null);
@@ -284,6 +293,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signInPatient]);
 
+  const switchUserById = useCallback(
+    async (targetUserIdOrRole: string) => {
+      const db = loadDB();
+      let p = db.profiles.find((x) => x.id === targetUserIdOrRole);
+      if (!p) {
+        p = db.profiles.find((x) => x.role === targetUserIdOrRole);
+      }
+      if (!p) return { error: `Profile for "${targetUserIdOrRole}" not found.` };
+
+      const users = listAuthUsers();
+      let authUser = users.find((u) => u.id === p!.id);
+      if (!authUser) {
+        authUser = {
+          id: p.id,
+          email: `${p.role}@sahayak.app`,
+          password: 'demo123456',
+          profile: p,
+        };
+        users.push(authUser);
+        writeAuthUsers(users);
+      }
+
+      const s: AuthSession = { user: { id: p.id, email: authUser.email } };
+      setSession(s);
+      setSessionState(s);
+      setUser({ id: p.id, email: authUser.email, user_metadata: p });
+      setProfile(p);
+      setLanguageState(p.language || 'en');
+      setThemeState(p.theme || 'light');
+      applyTheme(p.theme || 'light');
+
+      insertRow('audit_logs', db, {
+        user_id: p.id,
+        action: 'auth.role_switch',
+        actor: 'demo_bar',
+        target: p.role,
+        severity: 'info',
+        details: { switchedTo: p.full_name, role: p.role },
+        ip: '127.0.0.1',
+      });
+      saveDB(db);
+
+      return { error: null, profile: p };
+    },
+    [applyTheme]
+  );
+
   const signOut = useCallback(async () => {
     setSession(null);
     setSessionState(null);
@@ -308,6 +364,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInPatient,
         signInGuardian,
         signInDoctor,
+        switchUserById,
         signOut,
         refreshProfile,
       }}
@@ -319,6 +376,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    return {
+      user: null,
+      session: null,
+      profile: null,
+      loading: true,
+      language: 'en' as Language,
+      theme: 'light' as Theme,
+      applyTheme: () => {},
+      setLanguage: () => {},
+      setTheme: () => {},
+      signIn: async () => ({ error: null }),
+      signUp: async () => ({ error: null }),
+      signInDemo: async () => ({ error: null }),
+      signInPatient: async () => ({ error: null }),
+      signInGuardian: async () => ({ error: null }),
+      signInDoctor: async () => ({ error: null }),
+      switchUserById: async () => ({ error: null }),
+      signOut: async () => {},
+      refreshProfile: async () => {},
+    };
+  }
   return ctx;
 }

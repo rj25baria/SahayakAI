@@ -5,10 +5,10 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n-context';
 import { useGuardians, useEmergencies, useQrCard } from '@/lib/hooks';
 import { PageHeader, EmptyState, RiskBadge } from '@/components/dashboard/shared';
-import { QrCardDisplay } from '@/components/emergency/qr-card-display';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,9 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import type { GuardianRole, GuardianStatus, EmergencyRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { IncidentTimeline } from '@/components/emergency/incident-timeline';
+import { QrPresenceVerifier } from '@/components/emergency/qr-presence-verifier';
+import { MedicalQrCardDeck } from '@/components/dashboard/medical-qr-card-deck';
 
 const ROLE_LABELS: Record<GuardianRole, string> = {
   family: 'emergency.roleFamily',
@@ -196,13 +199,12 @@ export function EmergencyPage() {
     <div className="space-y-6">
       <PageHeader title={t('emergency.title')} subtitle={t('emergency.subtitle')} />
 
+      {/* Life-Saving Medical Emergency ID QR Card */}
+      <MedicalQrCardDeck />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: QR + SOS */}
         <div className="space-y-6">
-          {!isGuardian && card && (
-            <QrCardDisplay url={publicUrl} patientName={profile?.full_name || 'Patient'} onOpen={openPublic} t={t} />
-          )}
-
           {!isGuardian && (
             <Card className={cn('overflow-hidden', activeEmergency ? 'border-destructive/40' : '')}>
               <div className="bg-destructive px-5 py-4 text-white">
@@ -354,7 +356,7 @@ export function EmergencyPage() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>{t('auth.phone')}</Label>
-              <Input value={newGuardianEmail} onChange={(e) => setNewGuardianEmail(e.target.value)} placeholder="+91 98765 43210" />
+              <PhoneInput value={newGuardianEmail} onChange={(val) => setNewGuardianEmail(val)} />
               <p className="text-xs text-muted-foreground">The guardian must have a SAHAYAK account with this phone number.</p>
             </div>
             <div className="space-y-1.5">
@@ -381,7 +383,7 @@ export function EmergencyPage() {
     </div>
   );
 }
-
+ 
 function EmergencyCard({
   req, updates, isGuardian, currentUserId, onAccept, onResolve, onCancel, onSendUpdate, updateMsg, setUpdateMsg, t,
 }: {
@@ -400,7 +402,7 @@ function EmergencyCard({
   const acceptedByMe = req.accepted_by === currentUserId;
   const mapsUrl = req.lat && req.lng ? `https://www.google.com/maps?q=${req.lat},${req.lng}` : req.address ? `https://www.google.com/maps?q=${encodeURIComponent(req.address)}` : null;
   return (
-    <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+    <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-4">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-destructive">
@@ -416,27 +418,33 @@ function EmergencyCard({
       </div>
 
       {mapsUrl && (
-        <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex">
+        <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex">
           <Button size="sm" variant="outline"><Navigation className="mr-2 h-4 w-4" /> {t('emergency.navigate')}</Button>
         </a>
       )}
 
+      {/* QR Presence Verification Section */}
+      <QrPresenceVerifier request={req} />
+
       {/* Actions */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {isGuardian && req.status === 'active' && (
+      <div className="flex flex-wrap gap-2">
+        {isGuardian && (req.status === 'active' || req.status === 'family_alerted' || req.status === 'volunteer_escalated') && (
           <Button size="sm" variant="destructive" onClick={onAccept}><CheckCircle2 className="mr-2 h-4 w-4" /> {t('emergency.accept')}</Button>
         )}
-        {isGuardian && acceptedByMe && req.status === 'accepted' && (
+        {isGuardian && (acceptedByMe || req.status === 'reached' || req.status === 'verification_pending') && (
           <Button size="sm" variant="outline" onClick={onResolve}><CheckCircle2 className="mr-2 h-4 w-4" /> {t('common.resolved')}</Button>
         )}
-        {!isGuardian && (req.status === 'active' || req.status === 'accepted') && (
+        {!isGuardian && req.status !== 'resolved' && (
           <Button size="sm" variant="outline" onClick={onCancel}><XCircle className="mr-2 h-4 w-4" /> {t('emergency.cancelEmergency')}</Button>
         )}
       </div>
 
+      {/* Incident Journey Timeline */}
+      <IncidentTimeline request={req} />
+
       {/* Live updates */}
       {updates.length > 0 && (
-        <div className="mt-4 space-y-1.5 border-t border-border/50 pt-3">
+        <div className="space-y-1.5 border-t border-border/50 pt-3">
           <div className="text-xs font-medium text-muted-foreground">{t('emergency.liveUpdates')}</div>
           {updates.map((u) => (
             <div key={u.id} className="flex items-start gap-2 text-xs">
@@ -449,9 +457,9 @@ function EmergencyCard({
         </div>
       )}
 
-      {/* Send update (accepted guardian only) */}
-      {isGuardian && acceptedByMe && req.status === 'accepted' && (
-        <div className="mt-3 flex gap-2">
+      {/* Send update */}
+      {isGuardian && (
+        <div className="flex gap-2">
           <Input value={updateMsg} onChange={(e) => setUpdateMsg(e.target.value)} placeholder={t('emergency.sendUpdate')} onKeyDown={(e) => { if (e.key === 'Enter') onSendUpdate(); }} />
           <Button size="icon" onClick={onSendUpdate}><MessageSquare className="h-4 w-4" /></Button>
         </div>

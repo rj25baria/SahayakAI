@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/dashboard/shared';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -94,7 +95,7 @@ export function SettingsPage() {
             <h2 className="mb-4 font-medium">{t('settings.personalInfo')}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('settings.fullName')}><Input value={form.full_name ?? ''} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></Field>
-              <Field label={t('settings.phone')}><Input value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+              <Field label={t('settings.phone')}><PhoneInput value={form.phone ?? ''} onChange={(val) => setForm({ ...form, phone: val })} /></Field>
               <Field label={t('settings.dob')}><Input type="date" value={form.date_of_birth ?? ''} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} /></Field>
               <Field label={t('settings.gender')}><Input value={form.gender ?? ''} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Male / Female / Other" /></Field>
               <div className="sm:col-span-2"><Field label={t('settings.address')}><Input value={form.address ?? ''} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field></div>
@@ -115,11 +116,11 @@ export function SettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('settings.emergencyContact')}><Input value={form.emergency_contact_name ?? ''} onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} /></Field>
               <Field label={t('settings.emergencyRelation')}><Input value={form.emergency_contact_relation ?? ''} onChange={(e) => setForm({ ...form, emergency_contact_relation: e.target.value })} placeholder="Spouse / Son / Daughter" /></Field>
-              <div className="sm:col-span-2"><Field label={t('auth.phone')}><Input value={form.emergency_contact_phone ?? ''} onChange={(e) => setForm({ ...form, emergency_contact_phone: e.target.value })} /></Field></div>
+              <div className="sm:col-span-2"><Field label={t('auth.phone')}><PhoneInput value={form.emergency_contact_phone ?? ''} onChange={(val) => setForm({ ...form, emergency_contact_phone: val })} /></Field></div>
               <Field label={t('settings.insuranceProvider')}><Input value={form.insurance_provider ?? ''} onChange={(e) => setForm({ ...form, insurance_provider: e.target.value })} /></Field>
               <Field label={t('settings.insuranceNumber')}><Input value={form.insurance_number ?? ''} onChange={(e) => setForm({ ...form, insurance_number: e.target.value })} /></Field>
               <Field label={t('settings.doctorName')}><Input value={form.doctor_name ?? ''} onChange={(e) => setForm({ ...form, doctor_name: e.target.value })} /></Field>
-              <Field label={t('settings.doctorPhone')}><Input value={form.doctor_phone ?? ''} onChange={(e) => setForm({ ...form, doctor_phone: e.target.value })} /></Field>
+              <Field label={t('settings.doctorPhone')}><PhoneInput value={form.doctor_phone ?? ''} onChange={(val) => setForm({ ...form, doctor_phone: val })} /></Field>
             </div>
           </Card>
 

@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 const MED_COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export function MedicationsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useI18n();
   const { meds, logs, refresh } = useMedications();
   const [open, setOpen] = useState(false);
@@ -35,6 +35,19 @@ export function MedicationsPage() {
     instructions: '',
     color: MED_COLORS[0],
   });
+
+  const targetPatientUserId = profile?.role === 'patient' ? user?.id : 'demo_user_001';
+
+  // Quick button to set time to current minute for instant reminder testing
+  const setTimeToNow = (index: number) => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const times = [...form.times];
+    times[index] = `${hh}:${mm}`;
+    setForm({ ...form, times });
+    toast.info(`Time set to ${hh}:${mm}! Real-time reminder will trigger when clock reaches ${hh}:${mm}.`);
+  };
 
   const todayLogs = useMemo(() => logs.filter((l) => isToday(parseISO(l.scheduled_time))), [logs]);
   const takenToday = todayLogs.filter((l) => l.status === 'taken').length;
@@ -51,7 +64,7 @@ export function MedicationsPage() {
 
   // Ensure today's logs exist for active meds
   const ensureTodayLogs = async () => {
-    if (!user) return;
+    if (!user || !targetPatientUserId) return;
     const activeMeds = meds.filter((m) => m.active && m.times.length > 0);
     let changed = false;
     const db = loadDB();
@@ -61,11 +74,11 @@ export function MedicationsPage() {
         const [h, m] = time.split(':').map(Number);
         scheduled.setHours(h, m, 0, 0);
         const exists = db.medication_logs.some(
-          (l) => l.user_id === user!.id && l.medication_id === med.id && isSameDay(new Date(l.scheduled_time), scheduled)
+          (l) => l.user_id === med.user_id && l.medication_id === med.id && isSameDay(new Date(l.scheduled_time), scheduled)
         );
         if (!exists) {
           insertRow('medication_logs', db, {
-            user_id: user!.id,
+            user_id: med.user_id,
             medication_id: med.id,
             scheduled_time: scheduled.toISOString(),
             status: 'pending',
@@ -89,8 +102,9 @@ export function MedicationsPage() {
   const addMedication = async () => {
     if (!user || !form.name.trim()) return;
     const db = loadDB();
+    const assignedUserId = targetPatientUserId || user.id;
     insertRow('medications', db, {
-      user_id: user.id,
+      user_id: assignedUserId,
       name: form.name,
       dosage: form.dosage,
       frequency: form.frequency,
@@ -102,7 +116,7 @@ export function MedicationsPage() {
       end_date: null,
     });
     saveDB(db);
-    await logAudit(user.id, 'medication.added', { name: form.name });
+    await logAudit(user.id, 'medication.added', { name: form.name, assignedUserId });
     toast.success(t('common.save'));
     setOpen(false);
     setForm({ name: '', dosage: '', frequency: 'Twice daily', times: ['08:00', '20:00'], instructions: '', color: MED_COLORS[0] });
@@ -254,23 +268,38 @@ export function MedicationsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>{t('meds.times')}</Label>
+              <div className="flex items-center justify-between">
+                <Label>{t('meds.times')}</Label>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  Current: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {form.times.map((time, i) => (
-                  <div key={i} className="flex items-center gap-1">
+                  <div key={i} className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border/40">
                     <Input type="time" value={time} onChange={(e) => {
                       const times = [...form.times];
                       times[i] = e.target.value;
                       setForm({ ...form, times });
-                    }} className="w-28" />
+                    }} className="w-28 h-8 text-xs font-mono" />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-1.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
+                      onClick={() => setTimeToNow(i)}
+                      title="Set to current minute to test real-time notification"
+                    >
+                      Now
+                    </Button>
                     {form.times.length > 1 && (
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setForm({ ...form, times: form.times.filter((_, idx) => idx !== i) })}>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => setForm({ ...form, times: form.times.filter((_, idx) => idx !== i) })}>
                         <XCircle className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
                 ))}
-                <Button size="sm" variant="outline" onClick={() => setForm({ ...form, times: [...form.times, '12:00'] })}>
+                <Button size="sm" variant="outline" className="h-9 text-xs" onClick={() => setForm({ ...form, times: [...form.times, '12:00'] })}>
                   <Plus className="mr-1 h-3 w-3" /> {t('common.add')}
                 </Button>
               </div>

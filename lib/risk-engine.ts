@@ -318,3 +318,124 @@ export function severityColor(s: AlertSeverity): string {
       return 'text-sky-600 dark:text-sky-400';
   }
 }
+
+export interface SafetyScoreFactor {
+  title: string;
+  points: number;
+  maxPoints: number;
+  isPositive: boolean;
+  reason: string;
+}
+
+export interface ElderSafetyScoreResult {
+  score: number;
+  level: RiskLevel;
+  factors: SafetyScoreFactor[];
+}
+
+export function calculateElderSafetyScore(patientId: string, dbData: any): ElderSafetyScoreResult {
+  if (!dbData) return { score: 90, level: 'normal', factors: [] };
+
+  const factors: SafetyScoreFactor[] = [];
+  let baseScore = 100;
+
+  // 1. Check-in Response Rate (last 7 days)
+  const prompts = (dbData.checkin_prompts || []).filter((p: any) => p.patient_user_id === patientId);
+  const missedPrompts = prompts.filter((p: any) => p.status === 'timeout').length;
+  if (missedPrompts === 0) {
+    factors.push({
+      title: '100% Check-in Response Rate',
+      points: 25,
+      maxPoints: 25,
+      isPositive: true,
+      reason: 'Elder responded promptly to all scheduled wellness prompts in the past 7 days.',
+    });
+  } else {
+    const penalty = Math.min(25, missedPrompts * 12);
+    baseScore -= penalty;
+    factors.push({
+      title: `${missedPrompts} Missed Check-in${missedPrompts > 1 ? 's' : ''}`,
+      points: -penalty,
+      maxPoints: 25,
+      isPositive: false,
+      reason: `${missedPrompts} scheduled check-in prompt${missedPrompts > 1 ? 's were' : ' was'} missed without response.`,
+    });
+  }
+
+  // 2. Medication Adherence Rate
+  const logs = (dbData.medication_logs || []).filter((l: any) => l.user_id === patientId);
+  const totalMeds = logs.length;
+  const takenMeds = logs.filter((l: any) => l.status === 'taken').length;
+  const medRate = totalMeds > 0 ? Math.round((takenMeds / totalMeds) * 100) : 100;
+
+  if (medRate >= 90) {
+    factors.push({
+      title: `${medRate}% High Medication Adherence`,
+      points: 25,
+      maxPoints: 25,
+      isPositive: true,
+      reason: 'Excellent compliance with prescribed daily medication schedules.',
+    });
+  } else {
+    const penalty = Math.min(25, Math.round((100 - medRate) * 0.3));
+    baseScore -= penalty;
+    factors.push({
+      title: `${medRate}% Medication Adherence`,
+      points: -penalty,
+      maxPoints: 25,
+      isPositive: false,
+      reason: `Some scheduled medication doses were missed or delayed.`,
+    });
+  }
+
+  // 3. Vitals Stability
+  const vitals = (dbData.vitals || []).filter((v: any) => v.user_id === patientId);
+  const latestVital = vitals[0];
+  if (!latestVital || latestVital.risk_level === 'normal') {
+    factors.push({
+      title: 'Stable Vital Signs',
+      points: 25,
+      maxPoints: 25,
+      isPositive: true,
+      reason: 'Heart rate, SpO₂, blood pressure and glucose within safe physiological limits.',
+    });
+  } else {
+    const penalty = latestVital.risk_level === 'critical' ? 25 : latestVital.risk_level === 'warning' ? 15 : 8;
+    baseScore -= penalty;
+    factors.push({
+      title: `Vitals Assessment: ${latestVital.risk_level.toUpperCase()}`,
+      points: -penalty,
+      maxPoints: 25,
+      isPositive: false,
+      reason: `Latest vital reading flagged ${latestVital.risk_level} deviation.`,
+    });
+  }
+
+  // 4. Active Emergency / Alerts Penalty
+  const activeEmergencies = (dbData.emergency_requests || []).filter(
+    (e: any) => e.patient_user_id === patientId && e.status !== 'resolved' && e.status !== 'cancelled'
+  );
+  if (activeEmergencies.length > 0) {
+    baseScore -= 25;
+    factors.push({
+      title: 'Active Emergency Request In Progress',
+      points: -25,
+      maxPoints: 25,
+      isPositive: false,
+      reason: 'An active SOS / No-response escalation is currently open.',
+    });
+  } else {
+    factors.push({
+      title: 'No Active Emergency Escalations',
+      points: 25,
+      maxPoints: 25,
+      isPositive: true,
+      reason: 'Zero unresolved emergency incidents in progress.',
+    });
+  }
+
+  const score = Math.max(0, Math.min(100, Math.round(baseScore)));
+  const level: RiskLevel = score >= 80 ? 'normal' : score >= 60 ? 'elevated' : score >= 40 ? 'warning' : 'critical';
+
+  return { score, level, factors };
+}

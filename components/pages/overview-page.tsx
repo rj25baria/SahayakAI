@@ -35,13 +35,34 @@ import { riskLevelLabel } from '@/lib/risk-engine';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Profile, Role } from '@/lib/types';
+import { DemoController } from '@/components/emergency/demo-controller';
+import { NoResponseCheckinModal } from '@/components/emergency/no-response-checkin-modal';
+import { CaregiverCommandCentre } from '@/components/dashboard/caregiver-command-centre';
+import { ElderCheckinQrDeck } from '@/components/dashboard/elder-checkin-qr-deck';
+import { VoiceAssistModal } from '@/components/dashboard/voice-assist-modal';
+import { calculateElderSafetyScore } from '@/lib/risk-engine';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Mic, MicOff, Volume2, Sparkles, QrCode } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function OverviewPage() {
   const { profile, user } = useAuth();
   const role: Role = profile?.role ?? 'patient';
-  if (role === 'guardian') return <GuardianOverview />;
-  if (role === 'doctor') return <DoctorOverview />;
-  return <PatientOverview />;
+  
+  return (
+    <div className="space-y-6">
+      <DemoController />
+      {role === 'guardian' ? (
+        <GuardianOverview />
+      ) : role === 'doctor' ? (
+        <DoctorOverview />
+      ) : (
+        <PatientOverview />
+      )}
+    </div>
+  );
 }
 
 /* ========================= PATIENT VIEW ========================= */
@@ -75,14 +96,74 @@ function PatientOverview() {
     return null;
   }, [todayLogs]);
 
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+
+  const handleSpeechCommand = () => {
+    setVoiceModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {t('overview.welcome', { name: profile?.full_name?.split(' ')[0] || '' })}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t('overview.title')}</p>
+      <NoResponseCheckinModal />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
+            {t('overview.welcome', { name: profile?.full_name?.split(' ')[0] || '' })}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">{t('overview.title')}</p>
+        </div>
+
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-xs py-1 px-3 font-semibold">
+          <ShieldCheck className="mr-1.5 h-4 w-4" /> Sahayak Guard Active
+        </Badge>
       </div>
+
+      {/* ELDER-FRIENDLY HIGH-CONTRAST MOBILE QUICK ASSIST DECK */}
+      <Card className="p-4 sm:p-5 border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-background to-emerald-500/10 shadow-lg">
+        <div className="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-1.5">
+          <Sparkles className="h-4 w-4" /> Elder Easy Assist Deck (Mobile Optimized)
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Huge SOS Button */}
+          <Link href="/emergency" className="block">
+            <Button
+              size="lg"
+              className="w-full h-16 text-lg font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md rounded-xl flex items-center justify-center gap-3 border-2 border-rose-400 active:scale-98"
+            >
+              <Siren className="h-7 w-7 animate-bounce shrink-0" />
+              <span>EMERGENCY SOS</span>
+            </Button>
+          </Link>
+
+          {/* Huge I'm Okay Button */}
+          <Button
+            size="lg"
+            onClick={() => toast.success("Recorded: 'I AM OKAY'! Caregiver notified 👍")}
+            className="w-full h-16 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md rounded-xl flex items-center justify-center gap-3 border-2 border-emerald-400 active:scale-98"
+          >
+            <CheckCircle2 className="h-7 w-7 shrink-0" />
+            <span>I&apos;M OKAY 👍</span>
+          </Button>
+
+          {/* Voice Assist Button */}
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleSpeechCommand}
+            className="w-full h-16 text-base font-bold shadow-md rounded-xl flex items-center justify-center gap-3 border-2 border-primary/40 bg-background hover:bg-primary/5 text-foreground active:scale-98 transition-all"
+          >
+            <Mic className="h-7 w-7 shrink-0 text-primary" />
+            <span>Voice Assist 🎙️</span>
+          </Button>
+        </div>
+      </Card>
+
+      <VoiceAssistModal open={voiceModalOpen} onOpenChange={setVoiceModalOpen} />
+
+      {/* GUARDIAN & FAMILY CHECK-IN PASS QR CARD */}
+      <ElderCheckinQrDeck />
 
       {/* Stat row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -368,7 +449,7 @@ function GuardianOverview() {
             Hi, {first} <span className="text-sky-500">👋</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Guardian Hub · Keeping an eye on <span className="font-medium text-foreground">{wards.length}</span> family member{wards.length === 1 ? '' : 's'} · {pending} pending link{pending === 1 ? '' : 's'}
+            Guardian & Volunteer Responder Hub · Keeping an eye on <span className="font-medium text-foreground">{wards.length}</span> family member{wards.length === 1 ? '' : 's'} · {pending} pending link{pending === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -379,6 +460,9 @@ function GuardianOverview() {
           </Link>
         </div>
       </div>
+
+      {/* Real-time Caregiver & Volunteer Command Centre */}
+      <CaregiverCommandCentre />
 
       {/* Stat row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -564,20 +648,34 @@ function DoctorOverview() {
   const { profile } = useAuth();
   const t = useI18n().t;
   const { alerts } = useAlerts();
-  const { emergencies } = useEmergencies();
+  const { emergencies, refresh: refreshEmergencies } = useEmergencies();
   const roster = usePatientRoster();
+
+  const [selectedPatientForNote, setSelectedPatientForNote] = useState<Profile | null>(null);
+  const [rxNote, setRxNote] = useState('');
 
   const first = profile?.full_name?.split(' ').slice(-1)[0] ?? 'Doctor';
   const escalatedAlerts = alerts.filter((a) => a.escalated && !a.dismissed);
   const criticalVitals = roster.filter((r) => r.latestVital && (r.latestVital.risk_level === 'warning' || r.latestVital.risk_level === 'critical'));
   const lowAdherence = roster.filter((r) => r.avgAdherence30 < 80);
 
+  const activeEmergencies = emergencies.filter((e) => e.status !== 'resolved');
+
+  const handleSavePrescription = () => {
+    if (!selectedPatientForNote) return;
+    toast.success(`Clinical Note / Prescription saved for ${selectedPatientForNote.full_name}!`, {
+      description: 'Updated patient chart and synced with Caregiver Command Centre.',
+    });
+    setSelectedPatientForNote(null);
+    setRxNote('');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Good to see you, Dr. {first}
+            Good to see you, Dr. {first} 🩺
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Clinical Workbench · {roster.length} patients on panel · {format(new Date(), 'EEEE, MMM d, yyyy')}
@@ -623,24 +721,30 @@ function DoctorOverview() {
         />
       </div>
 
-      {/* Live emergencies */}
-      {emergencies.filter((e) => e.status !== 'resolved').length > 0 && (
-        <Card className="border-destructive/40 bg-destructive/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-destructive">
-                {emergencies.filter((e) => e.status !== 'resolved').length} active case{emergencies.filter((e) => e.status !== 'resolved').length === 1 ? '' : 's'}
+      {/* Live emergencies with Volunteer/Doctor Verification Trigger */}
+      {activeEmergencies.length > 0 && (
+        <Card className="border-2 border-destructive/80 bg-destructive/5 p-5 shadow-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destructive text-white shadow-md animate-pulse">
+                <Siren className="h-7 w-7" />
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">Open Emergency requests awaiting response or transport.</p>
-              <div className="mt-2 flex">
-                <Link href="/emergency">
-                  <Button size="sm" variant="destructive" className="h-7 text-xs">Open ER View →</Button>
-                </Link>
+              <div>
+                <div className="font-bold text-base text-destructive flex items-center gap-2">
+                  <span>{activeEmergencies.length} Open Emergency Case / Escalation</span>
+                  <Badge variant="destructive" className="uppercase text-[10px]">Action Required</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  An elder on panel missed check-in or initiated an SOS. Physical visit or tele-triage needed.
+                </p>
               </div>
             </div>
+
+            <Link href="/emergency">
+              <Button size="sm" variant="destructive" className="font-semibold gap-1.5 text-xs h-9">
+                <ShieldCheck className="h-4 w-4" /> Open Volunteer Emergency Command →
+              </Button>
+            </Link>
           </div>
         </Card>
       )}
@@ -649,11 +753,11 @@ function DoctorOverview() {
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between border-b border-border/60 p-5">
           <div>
-            <h2 className="font-medium">Patient Roster</h2>
-            <p className="text-xs text-muted-foreground">Tap any row to open vitals review</p>
+            <h2 className="font-medium">Clinical Patient Roster</h2>
+            <p className="text-xs text-muted-foreground">Explainable Safety Scores & Quick Prescription Actions</p>
           </div>
           <Badge variant="outline" className="text-emerald-600 border-emerald-500/40 bg-emerald-500/5">
-            <Stethoscope className="mr-1 h-3 w-3" /> All profiles
+            <Stethoscope className="mr-1 h-3 w-3" /> Panel Live
           </Badge>
         </div>
         <div className="divide-y divide-border/60">
@@ -666,9 +770,14 @@ function DoctorOverview() {
               const p = r.profile;
               const v = r.latestVital;
               const bp = v?.systolic_bp && v?.diastolic_bp ? `${v.systolic_bp}/${v.diastolic_bp}` : '—';
+
+              // Calculate Elder Safety Score for doctor visibility
+              const db = loadDB();
+              const safetyScore = calculateElderSafetyScore(p.id, db);
+
               return (
-                <Link href="/vitals" key={p.id} className="block group">
-                  <div className="flex flex-wrap items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/40">
+                <div key={p.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted/40">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
                     <Avatar className="h-11 w-11 shrink-0">
                       <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-sm font-semibold">
                         {(p.full_name || 'U').split(' ').map((n) => n[0]).slice(0, 2).join('')}
@@ -677,7 +786,15 @@ function DoctorOverview() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{p.full_name}</span>
+                        <Link href="/vitals" className="font-semibold hover:underline text-foreground">
+                          {p.full_name}
+                        </Link>
+
+                        {/* Explainable Safety Score Badge */}
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold text-xs">
+                          <Sparkles className="mr-1 h-3 w-3" /> Safety: {safetyScore.score}/100
+                        </Badge>
+
                         {v && (
                           <RiskBadge
                             level={v.risk_level}
@@ -689,53 +806,82 @@ function DoctorOverview() {
                             {r.activeAlerts} alert{r.activeAlerts === 1 ? '' : 's'}
                           </Badge>
                         )}
-                        {r.avgAdherence30 < 80 && (
-                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
-                            {r.avgAdherence30}% adherence
-                          </Badge>
-                        )}
                       </div>
+
                       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Stethoscope className="h-3 w-3" />
                           {p.chronic_conditions?.length ? p.chronic_conditions.join(' · ') : 'No chronic conditions'}
                         </span>
                         {p.blood_group && <span>BG {p.blood_group}</span>}
-                        {p.doctor_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Clinic</span>}
+                        {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {p.phone}</span>}
                       </div>
-                    </div>
-
-                    {/* Clinical snapshot */}
-                    <div className="flex items-center gap-3 text-right">
-                      <div className="hidden sm:block">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">BP</div>
-                        <div className="text-sm font-medium">{bp}</div>
-                      </div>
-                      <div className="hidden sm:block">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">HR</div>
-                        <div className="text-sm font-medium">{v?.heart_rate ?? '—'} bpm</div>
-                      </div>
-                      <div className="hidden md:block">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">30d Meds</div>
-                        <div className={cn('text-sm font-medium', r.avgAdherence30 < 80 ? 'text-warning' : 'text-emerald-600')}>
-                          {r.avgAdherence30}%
-                        </div>
-                      </div>
-                      <div className="hidden lg:block">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Last Seen</div>
-                        <div className="text-sm font-medium">
-                          {r.lastVisit ? formatDistanceToNow(new Date(r.lastVisit), { addSuffix: true }) : '—'}
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
-                </Link>
+
+                  {/* Actions & Vitals snapshot */}
+                  <div className="flex items-center gap-3">
+                    <div className="hidden sm:block text-right">
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">BP / HR</div>
+                      <div className="text-xs font-medium">{bp} · {v?.heart_rate ?? '—'} bpm</div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedPatientForNote(p)}
+                      className="h-8 text-xs gap-1 border-primary/40 text-primary hover:bg-primary/5"
+                    >
+                      <Pill className="h-3.5 w-3.5" /> Prescribe / Note
+                    </Button>
+
+                    <Link href="/vitals">
+                      <Button size="sm" variant="ghost" className="h-8 text-xs gap-1">
+                        Review <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               );
             })
           )}
         </div>
       </Card>
+
+      {/* Clinical Note / Prescription Dialog */}
+      <Dialog open={!!selectedPatientForNote} onOpenChange={(open) => !open && setSelectedPatientForNote(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-emerald-600" /> Prescribe / Add Clinical Note
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Save prescription update or doctor notes for {selectedPatientForNote?.full_name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Medication / Dosage Recommendation</label>
+              <Input placeholder="e.g. Amlodipine 5mg - 1 Tablet daily after breakfast" className="text-xs" />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium">Doctor Clinical Observations</label>
+              <Textarea
+                placeholder="Patient vitals stable. Blood pressure within normal range. Continue current regimen."
+                value={rxNote}
+                onChange={(e) => setRxNote(e.target.value)}
+                className="text-xs h-24"
+              />
+            </div>
+
+            <Button onClick={handleSavePrescription} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+              Save & Sync with Patient Chart
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

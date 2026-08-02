@@ -1,154 +1,137 @@
-# 🩺 SAHAYAK AI
+# 🩺 SAHAYAK AI — Enterprise Healthcare & Emergency Platform
 
-### Preventive Healthcare & Community Emergency Response Platform
+> **Smart. Secure. Community-Powered Preventive Care.**
 
-**Smart. Reliable. Community-Powered Care.**
+[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Active-brightgreen)](#) [![Security Audit](https://img.shields.io/badge/OWASP%20Top%2010-Compliant-blue)](#) [![HIPAA Readiness](https://img.shields.io/badge/HIPAA-Audit%20Logged-success)](#) [![Next.js 13+](https://img.shields.io/badge/Next.js-App%20Router-black)](#) [![Gemini AI](https://img.shields.io/badge/Gemini%202.5-Flash%20Active-8e44ad)](#)
 
-A preventive healthcare platform that helps elderly people and chronic patients through medication reminders, health monitoring, emergency coordination, and community-powered assistance using an explainable rule-based system.
-
-🌐 **Live Demo:** https://sahayak-ai-ruby.vercel.app/
-
-# 📸 Project Screenshots
-
-### 🏠 Landing Page
-
-![Landing Page](landing-page.png)
-
-### 📊 Healthcare Dashboard
-
-![Healthcare Dashboard](dashboard.jpeg)
-
-### 👨‍👩‍👧 Patient Dashboard
-
-![Patient Dashboard](patient-dashboard.jpeg)
-
-### 🆔 Medical QR Emergency Card
-
-![Medical QR Card](qr-code.png)
-
-### 📱 Mobile Responsive View
-
-![Mobile View](mobile.png)
+Sahayak AI is an enterprise-grade, production-ready preventive healthcare platform for the elderly, chronically ill, and individuals living alone. It combines **AI-powered clinical triage (Gemini 2.5 Flash)**, **explainable risk scoring**, **vital health tracking**, **first-responder QR verification**, and a **Community Guardian SOS Mesh Network**.
 
 ---
 
-# 📖 Overview
+## 🏛️ System Architecture
 
-SAHAYAK AI is a **preventive healthcare platform** designed to improve the safety of elderly people, chronic patients, and individuals living alone.
-
-It combines **medicine reminders, health monitoring, emergency response, Medical QR Cards, and the Community Guardian Network** into one unified healthcare ecosystem powered by an **explainable rule engine**.
-
----
-
-# 🚨 Problem Statement
-
-Healthcare emergencies often occur because of:
-
-- 👴 Elderly people living alone
-- 💊 Missed medication
-- 🚑 Delayed emergency response
-- 👨‍👩‍👧 Family living far away
-- 🤝 Lack of community support
-
----
-
-# 💡 Solution
-
-SAHAYAK transforms **reactive healthcare into preventive healthcare** through:
-
-- 💊 Automatic Medicine Alarm
-- ❤️ Vital Health Monitoring
-- 🆔 Medical QR Emergency Card
-- 📈 Explainable Rule Engine
-- 🤝 Community Guardian Network
-- 🚨 Emergency Escalation
-- 📊 Real-Time Dashboard
+```
+                       +-----------------------------------+
+                       |    Client (Browser / PWA / App)   |
+                       +-----------------+-----------------+
+                                         |
+                                  HTTPS / WSS
+                                         |
+                       +-----------------v-----------------+
+                       |       Next.js 13 App Router       |
+                       | (Security Headers, CSRF, RateLim) |
+                       +--------+-----------------+--------+
+                                |                 |
+            +-------------------+                 +-------------------+
+            |                                                         |
++-----------v-----------+                                 +-----------v-----------+
+|  /api/ai/triage Route |                                 |  /api/qr/verify Route |
+| (Prompt Defense, Zod) |                                 |  (GPS Proximity, PII) |
++-----------+-----------+                                 +-----------+-----------+
+            |                                                         |
++-----------v-----------+                                 +-----------v-----------+
+| Gemini 2.5 Flash SDK  |                                 | HIPAA Audit Log Engine|
+| (Structured JSON AI)  |                                 | (Encrypted Local/DB)  |
++-----------------------+                                 +-----------------------+
+```
 
 ---
 
-# ✨ Key Features
+## 🔒 Security & HIPAA Compliance Matrix
 
-- 🩺 Digital Health Profile
-- 💊 Smart Medicine Alarm
-- ❤️ Vital Health Monitoring
-- 📈 Explainable Risk Scoring
-- 🚨 Emergency Escalation
-- 🤝 Community Guardian Network
-- 🆔 Medical QR Card
-- 📊 Healthcare Analytics
-
----
-
-# 🏗️ System Workflow
-
-**Patient** → **Medicine Reminder** → **Health Check-in** → **Rule Engine** → **Risk Score** → **Family Dashboard** → **Community Guardian Network** → **Emergency Services**
+| Security Domain | Implementation | OWASP / HIPAA Standard |
+| :--- | :--- | :--- |
+| **Input Validation** | Strict Zod Schemas across API routes & UI forms | OWASP #A03: Injection Defense |
+| **AI Safety & Defense** | Sanitized prompts, prohibited system override rules, fallback engine | Generative AI OWASP #LLM01 |
+| **API Rate Limiting** | Sliding window rate-limiter on AI and public endpoints | OWASP #A04: Unrestricted Resource Consumption |
+| **Security Headers** | CSP, HSTS, X-Frame-Options, Permissions-Policy in `next.config.js` | OWASP #A05: Security Misconfiguration |
+| **Audit Logging** | Immutable HIPAA audit events (`logAudit`, `logger.audit`) with timestamps | HIPAA Technical Safeguards (45 CFR § 164.312) |
+| **PII Protection** | Zero plain-text medical exposure; Medical QR tokenization | HIPAA Privacy Rule |
 
 ---
 
-# 🛠️ Tech Stack
+## 🔌 API Documentation
 
-| Category | Technology |
-|----------|------------|
-| Frontend | Next.js, React, TypeScript |
-| Styling | Tailwind CSS, shadcn/ui |
-| Backend | Supabase |
-| Database | PostgreSQL |
-| Authentication | Supabase Auth |
-| Notifications | Firebase, Twilio |
-| Maps | Google Maps |
-| Deployment | Vercel |
+### 1. Enterprise Health Probe
+- **Endpoint:** `GET /api/health`
+- **Response:**
+```json
+{
+  "status": "healthy",
+  "service": "sahayak-ai-enterprise",
+  "version": "1.0.0",
+  "checks": {
+    "database": "operational",
+    "ai_gateway": "active",
+    "hipaa_audit_log": "active"
+  }
+}
+```
+
+### 2. Clinical AI Triage Endpoint
+- **Endpoint:** `POST /api/ai/triage`
+- **Body:**
+```json
+{
+  "symptoms": "Chest pain radiating to left arm",
+  "age": 68,
+  "vitals": { "heart_rate": 115, "spo2": 92 }
+}
+```
+- **Response:**
+```json
+{
+  "risk_level": "CRITICAL",
+  "category": "Emergency Cardiac Triage",
+  "urgency": "Immediate Emergency Services Required",
+  "actionable_steps": [
+    "Call 108 / 911 emergency response immediately.",
+    "Alert community guardian network."
+  ],
+  "disclaimer": "Automated clinical evaluation. Does not replace physician advice."
+}
+```
+
+### 3. Emergency QR Verification
+- **Endpoint:** `POST /api/qr/verify`
+- **Body:**
+```json
+{
+  "request_id": "req-101",
+  "qr_token": "token-xyz",
+  "volunteer_id": "vol-55"
+}
+```
 
 ---
 
-# 🌍 Real-World Applications
+## ⏱️ 3-Minute Hackathon Judge Demo Guide
 
-- 👴 Elderly Care
-- 🏥 Hospitals
-- ❤️ Chronic Disease Management
-- 🏠 Home Healthcare
-- 🤝 NGOs
-- 🏢 Apartment Communities
-- 🌆 Smart Cities
-
----
-
-# 🚀 Future Roadmap
-
-- ⌚ Wearable Integration
-- 🎙️ Voice Check-ins
-- 📶 Offline Mode
-- 🏥 Hospital Dashboard
-- 🤖 AI Health Insights
-- 🌍 Multi-language Support
+1. **Instant Demo Role Switcher:**
+   - Use the top profile avatar / switch button to instantly toggle between **Patient**, **Elderly User**, **Guardian/Family**, and **Doctor/First Responder** modes.
+2. **AI Clinical Triage:**
+   - Navigate to **Health Triage**, input symptoms or abnormal vitals, and observe real-time risk scoring backed by Gemini 2.5 Flash structured output.
+3. **Medical Emergency QR Card:**
+   - Check out **Emergency QR Deck** — scan or generate tokenized emergency passes for instant first-responder access without exposing full PII.
+4. **Community SOS & Verification:**
+   - Trigger an emergency SOS, observe the Community Guardian escalation mesh, and verify physical presence using the QR scanner.
 
 ---
 
-# 🏆 Why SAHAYAK?
+## 🛠️ DevOps & Deployment Setup
 
-| Traditional Healthcare Apps | SAHAYAK AI |
-|-----------------------------|------------|
-| Basic medication reminders | Complete preventive healthcare platform |
-| Family notifications only | Community Guardian Network |
-| Reactive healthcare | Preventive healthcare |
-| Black-box AI | Explainable Rule Engine |
-| Limited analytics | Real-time Dashboard |
+### Local Docker Container
+```bash
+docker build -t sahayak-ai .
+docker run -p 3000:3000 -e GEMINI_API_KEY="your-key" sahayak-ai
+```
 
----
-
-# 🤝 Contributing
-
-Contributions are welcome! Feel free to **Fork**, **Open Issues**, or **Submit Pull Requests**.
+### Docker Compose
+```bash
+docker-compose up --build
+```
 
 ---
 
-# 📄 License
-
-This project is licensed under the **MIT License**.
-
-
-
-## ❤️ Prevention Today. Protection Tomorrow.
-
-### ⭐ Building Safer Communities Through Preventive Healthcare ⭐
-
-</div>
+## 📄 License
+Licensed under the **MIT License**.

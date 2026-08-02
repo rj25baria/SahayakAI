@@ -1,0 +1,8 @@
+{
+  "name": "SahayakAI_final",
+  "description": "AI-powered healthcare management, vital tracking, and emergency health record platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

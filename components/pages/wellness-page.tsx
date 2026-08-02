@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Smile, Frown, Meh, HeartPulse, Loader2 } from 'lucide-react';
+import { Smile, Frown, Meh, HeartPulse, Loader2, Mic, Sparkles } from 'lucide-react';
+import { VoiceAssistModal } from '@/components/dashboard/voice-assist-modal';
 import { evaluateWellness, riskLevelLabel } from '@/lib/risk-engine';
 import { logAudit } from '@/lib/audit';
 import { loadDB, saveDB, insertRow } from '@/lib/store';
@@ -32,6 +33,7 @@ export function WellnessPage() {
   const [mobility, setMobility] = useState<'impaired' | 'normal' | 'good'>('normal');
   const [notes, setNotes] = useState('');
 
+  const [voiceAssistOpen, setVoiceAssistOpen] = useState(false);
   const checkedToday = checkins.some((c) => isToday(parseISO(c.recorded_at)));
   const latest = checkins[0];
 
@@ -82,10 +84,24 @@ export function WellnessPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Check-in form */}
         <Card className="p-6 lg:col-span-2">
-          <h2 className="mb-1 text-lg font-medium">{t('wellness.howAreYou')}</h2>
-          {checkedToday && (
-            <p className="mb-4 text-xs text-success">✓ {t('common.today')} check-in submitted</p>
-          )}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-foreground">{t('wellness.howAreYou')}</h2>
+              {checkedToday && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ {t('common.today')} check-in submitted</p>
+              )}
+            </div>
+
+            <Button
+              onClick={() => setVoiceAssistOpen(true)}
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2 text-xs h-9 px-3.5 shadow-sm"
+            >
+              <Mic className="h-4 w-4" /> Voice Report Symptoms / Meds 🎙️
+            </Button>
+          </div>
+
+          <VoiceAssistModal open={voiceAssistOpen} onOpenChange={setVoiceAssistOpen} onSuccess={refresh} />
 
           <div className="space-y-6">
             {/* Mood */}
@@ -205,15 +221,30 @@ export function WellnessPage() {
 }
 
 function WellnessHistoryRow({ c, t }: { c: WellnessCheckin; t: (k: string) => string }) {
+  const isVoice = c.notes?.includes('[Voice Assist');
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
-      <div className="text-xs text-muted-foreground">{format(parseISO(c.recorded_at), 'MMM d, h:mm a')}</div>
-      <div className="flex items-center gap-3 text-xs">
-        <span title={t('wellness.mood')}>😊{c.mood}</span>
-        <span title={t('wellness.pain')}>⚡{c.pain_level}</span>
-        <span title={t('wellness.sleep')}>😴{c.sleep_hours}h</span>
-        <span className="font-semibold">{c.score}</span>
+    <div className="flex flex-col gap-1 rounded-xl border border-border/60 bg-muted/30 p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{format(parseISO(c.recorded_at), 'MMM d, h:mm a')}</span>
+          {isVoice && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+              <Mic className="h-3 w-3" /> Voice Note
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <span title={t('wellness.mood')}>😊 {c.mood}/5</span>
+          <span title={t('wellness.pain')}>⚡ {c.pain_level}/10</span>
+          <span className="font-bold text-primary">{c.score} pts</span>
+        </div>
       </div>
+
+      {c.notes && (
+        <p className="text-xs text-foreground/90 bg-background/60 p-2 rounded-lg border border-border/40 mt-1 leading-snug">
+          {c.notes}
+        </p>
+      )}
     </div>
   );
 }

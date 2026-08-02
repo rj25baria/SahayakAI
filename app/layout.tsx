@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { AppProviders } from '@/components/app-providers';
 import { ThemeBootstrap } from '@/components/theme-bootstrap';
 import { Toaster } from '@/components/ui/sonner';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -13,9 +14,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SAHAYAK — Preventive Healthcare Companion',
+  title: 'SAHAYAK — Enterprise Preventive Healthcare & Emergency Platform',
   description:
-    'A preventive healthcare platform for the elderly, chronically ill, and people living alone. Explainable risk scoring, medication adherence, emergency escalation, and a Community Guardian Network.',
+    'AI-powered preventive healthcare platform with explainable clinical triage, vital tracking, emergency SOS mesh network, and Medical Emergency QR cards.',
   applicationName: 'SAHAYAK',
   authors: [{ name: 'SAHAYAK' }],
   keywords: [
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
     'medication adherence',
     'emergency SOS',
     'vital monitoring',
+    'AI triage',
   ],
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#0f8b8d' },
@@ -32,9 +34,9 @@ export const metadata: Metadata = {
   ],
   viewport: { width: 'device-width', initialScale: 1 },
   openGraph: {
-    title: 'SAHAYAK — Preventive Healthcare Companion',
+    title: 'SAHAYAK — Enterprise Preventive Healthcare Platform',
     description:
-      'Explainable risk scoring, medication adherence, a Medical QR Emergency Card, and a Community Guardian Network for those who need care most.',
+      'Explainable AI clinical triage, medication adherence, Medical Emergency QR Card, and Community Guardian Network.',
     type: 'website',
   },
 };
@@ -45,10 +47,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <ThemeBootstrap />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <AuthProvider>
-          <AppProviders>{children}</AppProviders>
-        </AuthProvider>
+      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background text-foreground`}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
+        <ErrorBoundary>
+          <AuthProvider>
+            <AppProviders>
+              <div id="main-content">{children}</div>
+            </AppProviders>
+          </AuthProvider>
+        </ErrorBoundary>
         <Toaster />
       </body>
     </html>

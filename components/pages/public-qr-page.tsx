@@ -99,6 +99,21 @@ export function PublicQrPage({ token }: { token: string }) {
           </div>
 
           <div className="space-y-5 p-6">
+            {data.emergency_contact_phone && (
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <a href={`tel:${data.emergency_contact_phone}`} className="flex-1">
+                  <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2">
+                    <Phone className="h-4 w-4 animate-bounce" /> Call Guardian ({data.emergency_contact_phone})
+                  </Button>
+                </a>
+                <a href="tel:108" className="shrink-0">
+                  <Button size="lg" variant="destructive" className="w-full font-bold gap-2">
+                    <ShieldAlert className="h-4 w-4" /> Call Ambulance 108
+                  </Button>
+                </a>
+              </div>
+            )}
+
             {data.allergies && data.allergies.length > 0 && (
               <Section icon={ShieldAlert} title="Allergies" tone="destructive">
                 <div className="flex flex-wrap gap-1.5">
@@ -162,7 +177,7 @@ export function PublicQrPage({ token }: { token: string }) {
         </Card>
 
         <div className="mt-4 text-center text-xs text-muted-foreground">
-          This card is shared at the patient's explicit consent for emergency use only.
+          This card is shared at the patient&apos;s explicit consent for emergency use only.
         </div>
       </div>
     </div>

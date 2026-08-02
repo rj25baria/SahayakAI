@@ -27,19 +27,45 @@ import {
   nowISO,
 } from '@/lib/store';
 
+export function getRelevantUserIds(
+  user: { id: string } | null,
+  profile: Profile | null,
+  db: ReturnType<typeof loadDB>
+): string[] {
+  if (!user) return [];
+  if (!profile || profile.role === 'patient') {
+    return [user.id];
+  }
+  if (profile.role === 'guardian') {
+    const wardIds = db.guardians
+      .filter((g) => g.guardian_user_id === user.id)
+      .map((g) => g.patient_user_id)
+      .filter(Boolean);
+    const set = new Set([user.id, ...wardIds, 'demo_user_001']);
+    return Array.from(set);
+  }
+  if (profile.role === 'doctor') {
+    const patientIds = db.profiles.filter((p) => p.role === 'patient').map((p) => p.id);
+    const set = new Set([user.id, ...patientIds, 'demo_user_001']);
+    return Array.from(set);
+  }
+  return [user.id];
+}
+
 export function useVitals() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [vitals, setVitals] = useState<VitalReading[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) return;
     const db = loadDB();
-    const rows = selectEq('vitals', db, 'user_id', user.id) as VitalReading[];
+    const relIds = getRelevantUserIds(user, profile, db);
+    const rows = db.vitals.filter((v) => relIds.includes(v.user_id));
     rows.sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
     setVitals(rows.slice(0, 100));
     setLoading(false);
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     load();
@@ -49,18 +75,19 @@ export function useVitals() {
 }
 
 export function useAlerts() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) return;
     const db = loadDB();
-    const rows = selectEq('alerts', db, 'user_id', user.id) as Alert[];
+    const relIds = getRelevantUserIds(user, profile, db);
+    const rows = db.alerts.filter((a) => relIds.includes(a.user_id));
     rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setAlerts(rows.slice(0, 100));
     setLoading(false);
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     load();
@@ -70,7 +97,7 @@ export function useAlerts() {
 }
 
 export function useMedications() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [meds, setMeds] = useState<Medication[]>([]);
   const [logs, setLogs] = useState<MedicationLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,14 +105,15 @@ export function useMedications() {
   const load = useCallback(async () => {
     if (!user) return;
     const db = loadDB();
-    const mRows = selectEq('medications', db, 'user_id', user.id) as Medication[];
+    const relIds = getRelevantUserIds(user, profile, db);
+    const mRows = db.medications.filter((m) => relIds.includes(m.user_id));
     mRows.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    const lRows = selectEq('medication_logs', db, 'user_id', user.id) as MedicationLog[];
+    const lRows = db.medication_logs.filter((l) => relIds.includes(l.user_id));
     lRows.sort((a, b) => new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime());
     setMeds(mRows);
     setLogs(lRows.slice(0, 200));
     setLoading(false);
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     load();
@@ -95,24 +123,49 @@ export function useMedications() {
 }
 
 export function useWellness() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [checkins, setCheckins] = useState<WellnessCheckin[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) return;
     const db = loadDB();
-    const rows = selectEq('wellness_checkins', db, 'user_id', user.id) as WellnessCheckin[];
+    const relIds = getRelevantUserIds(user, profile, db);
+    const rows = db.wellness_checkins.filter((w) => relIds.includes(w.user_id));
     rows.sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
     setCheckins(rows.slice(0, 60));
     setLoading(false);
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   return { checkins, loading, refresh: load };
+}
+
+export function useCheckinPrompts() {
+  const { user } = useAuth();
+  const [prompts, setPrompts] = useState<import('@/lib/types').CheckinPrompt[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    const db = loadDB();
+    const all = db.checkin_prompts || [];
+    const rows = all.filter((p) => p.patient_user_id === user.id);
+    rows.sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
+    setPrompts(rows);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 3000); // Polling for demo responsiveness
+    return () => clearInterval(interval);
+  }, [load]);
+
+  return { prompts, loading, refresh: load };
 }
 
 export function useGuardians() {
@@ -190,6 +243,8 @@ export function useEmergencies() {
 
   useEffect(() => {
     load();
+    const interval = setInterval(load, 2500);
+    return () => clearInterval(interval);
   }, [load]);
 
   return { emergencies, updates, loading, refresh: load };
@@ -231,18 +286,19 @@ export function useQrCard() {
 }
 
 export function useAuditLogs() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [logs, setLogs] = useState<import('@/lib/types').AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!user) return;
     const db = loadDB();
-    const rows = selectEq('audit_logs', db, 'user_id', user.id) as import('@/lib/types').AuditLog[];
+    const relIds = getRelevantUserIds(user, profile, db);
+    const rows = db.audit_logs.filter((a) => relIds.includes(a.user_id));
     rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setLogs(rows.slice(0, 200));
     setLoading(false);
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     load();
@@ -253,6 +309,7 @@ export function useAuditLogs() {
 
 export function usePatientProfiles(ids: string[]) {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const idsKey = ids.join(',');
 
   useEffect(() => {
     if (ids.length === 0) return;
@@ -264,7 +321,7 @@ export function usePatientProfiles(ids: string[]) {
       map[p.id] = p;
     });
     setProfiles(map);
-  }, [ids.join(',')]);
+  }, [idsKey, ids]);
 
   return profiles;
 }

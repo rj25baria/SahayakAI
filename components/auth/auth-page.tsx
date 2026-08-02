@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 import { HeartPulse, Loader2, User, Users, Stethoscope } from 'lucide-react';
@@ -118,13 +119,10 @@ export function AuthPage() {
                 <>
                   <div className="space-y-1.5">
                     <Label htmlFor="phone">{t('auth.phone')}</Label>
-                    <Input
+                    <PhoneInput
                       id="phone"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      autoComplete="tel"
-                      className="h-11"
-                      placeholder="+91 98765 43210"
+                      onChange={(val) => setPhone(val)}
                     />
                   </div>
 
