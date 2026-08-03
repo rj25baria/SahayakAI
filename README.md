@@ -1,137 +1,92 @@
-# 🩺 SAHAYAK AI — Enterprise Healthcare & Emergency Platform
+# 🩺 SAHAYAK AI
 
-> **Smart. Secure. Community-Powered Preventive Care.**
+## AI-Powered Healthcare Assistant for Smarter, Faster & More Accessible Healthcare
 
-[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-Active-brightgreen)](#) [![Security Audit](https://img.shields.io/badge/OWASP%20Top%2010-Compliant-blue)](#) [![HIPAA Readiness](https://img.shields.io/badge/HIPAA-Audit%20Logged-success)](#) [![Next.js 13+](https://img.shields.io/badge/Next.js-App%20Router-black)](#) [![Gemini AI](https://img.shields.io/badge/Gemini%202.5-Flash%20Active-8e44ad)](#)
+**Live Demo:** https://sahayak-ai-ruby.vercel.app/
 
-Sahayak AI is an enterprise-grade, production-ready preventive healthcare platform for the elderly, chronically ill, and individuals living alone. It combines **AI-powered clinical triage (Gemini 2.5 Flash)**, **explainable risk scoring**, **vital health tracking**, **first-responder QR verification**, and a **Community Guardian SOS Mesh Network**.
 
----
+# About
 
-## 🏛️ System Architecture
+SAHAYAK AI is an AI-powered healthcare platform designed to make healthcare more accessible, intelligent, and user-friendly. It combines modern AI capabilities with a clean and responsive user experience to assist patients, healthcare professionals, and caregivers.
 
-```
-                       +-----------------------------------+
-                       |    Client (Browser / PWA / App)   |
-                       +-----------------+-----------------+
-                                         |
-                                  HTTPS / WSS
-                                         |
-                       +-----------------v-----------------+
-                       |       Next.js 13 App Router       |
-                       | (Security Headers, CSRF, RateLim) |
-                       +--------+-----------------+--------+
-                                |                 |
-            +-------------------+                 +-------------------+
-            |                                                         |
-+-----------v-----------+                                 +-----------v-----------+
-|  /api/ai/triage Route |                                 |  /api/qr/verify Route |
-| (Prompt Defense, Zod) |                                 |  (GPS Proximity, PII) |
-+-----------+-----------+                                 +-----------+-----------+
-            |                                                         |
-+-----------v-----------+                                 +-----------v-----------+
-| Gemini 2.5 Flash SDK  |                                 | HIPAA Audit Log Engine|
-| (Structured JSON AI)  |                                 | (Encrypted Local/DB)  |
-+-----------------------+                                 +-----------------------+
-```
+The platform provides intelligent healthcare guidance, AI-assisted interactions, medical document support, symptom assistance, and multilingual communication while following modern web development best practices.
 
----
+# Key Features
 
-## 🔒 Security & HIPAA Compliance Matrix
+- AI Health Assistant
+- Symptom Analysis
+- Medicine Assistance
+- Smart Medical Document Processing
+- Multilingual Support
+- Responsive Design
+- Secure API Architecture
+- Production Ready
 
-| Security Domain | Implementation | OWASP / HIPAA Standard |
-| :--- | :--- | :--- |
-| **Input Validation** | Strict Zod Schemas across API routes & UI forms | OWASP #A03: Injection Defense |
-| **AI Safety & Defense** | Sanitized prompts, prohibited system override rules, fallback engine | Generative AI OWASP #LLM01 |
-| **API Rate Limiting** | Sliding window rate-limiter on AI and public endpoints | OWASP #A04: Unrestricted Resource Consumption |
-| **Security Headers** | CSP, HSTS, X-Frame-Options, Permissions-Policy in `next.config.js` | OWASP #A05: Security Misconfiguration |
-| **Audit Logging** | Immutable HIPAA audit events (`logAudit`, `logger.audit`) with timestamps | HIPAA Technical Safeguards (45 CFR § 164.312) |
-| **PII Protection** | Zero plain-text medical exposure; Medical QR tokenization | HIPAA Privacy Rule |
+# Technology Stack
 
----
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- Next.js App Router
+- Google Gemini AI
+- Vercel
+- Docker Ready
 
-## 🔌 API Documentation
+# Features Overview
 
-### 1. Enterprise Health Probe
-- **Endpoint:** `GET /api/health`
-- **Response:**
-```json
-{
-  "status": "healthy",
-  "service": "sahayak-ai-enterprise",
-  "version": "1.0.0",
-  "checks": {
-    "database": "operational",
-    "ai_gateway": "active",
-    "hipaa_audit_log": "active"
-  }
-}
-```
+| Module | Status |
+|---------|--------|
+| AI Chat Assistant | ✅ |
+| Healthcare Dashboard | ✅ |
+| Authentication | ✅ |
+| AI Workflows | ✅ |
+| Responsive UI | ✅ |
+| API Routes | ✅ |
+| SEO Optimized | ✅ |
+| Production Ready | ✅ |
 
-### 2. Clinical AI Triage Endpoint
-- **Endpoint:** `POST /api/ai/triage`
-- **Body:**
-```json
-{
-  "symptoms": "Chest pain radiating to left arm",
-  "age": 68,
-  "vitals": { "heart_rate": 115, "spo2": 92 }
-}
-```
-- **Response:**
-```json
-{
-  "risk_level": "CRITICAL",
-  "category": "Emergency Cardiac Triage",
-  "urgency": "Immediate Emergency Services Required",
-  "actionable_steps": [
-    "Call 108 / 911 emergency response immediately.",
-    "Alert community guardian network."
-  ],
-  "disclaimer": "Automated clinical evaluation. Does not replace physician advice."
-}
-```
+# Performance
 
-### 3. Emergency QR Verification
-- **Endpoint:** `POST /api/qr/verify`
-- **Body:**
-```json
-{
-  "request_id": "req-101",
-  "qr_token": "token-xyz",
-  "volunteer_id": "vol-55"
-}
-```
+- Optimized Next.js App Router
+- Server Components
+- Lazy Loading
+- Dynamic Imports
+- Image Optimization
 
----
+# Security
 
-## ⏱️ 3-Minute Hackathon Judge Demo Guide
+- Secure API Routes
+- Input Validation
+- Error Handling
 
-1. **Instant Demo Role Switcher:**
-   - Use the top profile avatar / switch button to instantly toggle between **Patient**, **Elderly User**, **Guardian/Family**, and **Doctor/First Responder** modes.
-2. **AI Clinical Triage:**
-   - Navigate to **Health Triage**, input symptoms or abnormal vitals, and observe real-time risk scoring backed by Gemini 2.5 Flash structured output.
-3. **Medical Emergency QR Card:**
-   - Check out **Emergency QR Deck** — scan or generate tokenized emergency passes for instant first-responder access without exposing full PII.
-4. **Community SOS & Verification:**
-   - Trigger an emergency SOS, observe the Community Guardian escalation mesh, and verify physical presence using the QR scanner.
+# Accessibility
 
----
+- Semantic HTML
+- Keyboard Navigation
+- Screen Reader Support
 
-## 🛠️ DevOps & Deployment Setup
+# SEO
 
-### Local Docker Container
-```bash
-docker build -t sahayak-ai .
-docker run -p 3000:3000 -e GEMINI_API_KEY="your-key" sahayak-ai
-```
+- Dynamic Metadata
+- Open Graph
+- Structured Content
 
-### Docker Compose
-```bash
-docker-compose up --build
-```
+# Local Setup
 
----
+1. Clone the repository.
+2. Install dependencies.
+3. Configure environment variables.
+4. Run the development server.
 
-## 📄 License
-Licensed under the **MIT License**.
+# Docker
+
+Supports Docker deployment.
+
+# Future Roadmap
+
+- Voice Assistant
+- OCR Medical Reports
+- Wearable Integration
+- Appointment Scheduling
+- Offline Support
